@@ -14,7 +14,7 @@ const gameBoard = (() => {
 
   const setPosition = (symbol, column, row) => {
     const cell = board[row][column];
-
+  
     if (cell.getValue() === '') {
         cell.addSymbol(symbol); 
         return true;
@@ -29,8 +29,16 @@ const gameBoard = (() => {
     const boardWithCellValues = board.map((row) => row.map((cell) => cell.getValue()));
     console.log(boardWithCellValues);  
   };
+
+  const resetBoard = () => {
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < columns; j++) {
+        board[i][j].addSymbol('');
+      }
+    }
+  };
   
-  return { getBoard, setPosition, printBoard };
+  return { getBoard, setPosition, printBoard, resetBoard };
 })();
 
 function createCell() {
@@ -83,6 +91,8 @@ const game = (() => {
     
     if (checkWinner()) {
       printWinner();
+      displayController.showWinner();
+      game.resetGame();
       return;
     }
 
@@ -131,9 +141,63 @@ const game = (() => {
 
   printNewRound();
 
+  const resetGame = () => {
+    gameBoard.resetBoard();
+    activePlayer = players[0];
+    printNewRound();
+    displayController.updateScreen();
+  };
+
   return {
     playRound,
     getActivePlayer,
     printNewRound,
+    resetGame
   };
+})();
+
+const displayController = (() => {
+  const playerTurnDiv = document.querySelector('.player-turn');
+  const boardContainerDiv = document.querySelector('.board-container');
+
+  const updateScreen = () => {
+    boardContainerDiv.textContent = '';
+
+    const board = gameBoard.getBoard();
+    
+    playerTurnDiv.textContent = `${game.getActivePlayer().name}'s turn...`;
+
+    board.forEach((row, columnIndex) => {
+      row.forEach((cell, rowIndex) => {
+        const cellButton = document.createElement("button");
+        cellButton.classList.add("cell");
+        cellButton.dataset.row = columnIndex;
+        cellButton.dataset.column = rowIndex;
+        cellButton.textContent = cell.getValue();
+        boardContainerDiv.appendChild(cellButton);
+      });
+    });
+  };
+
+  function clickHandlerBoard(e) {
+    const selectedColumn = e.target.dataset.column;
+    const selectedRow = e.target.dataset.row;
+
+    console.log(selectedColumn);
+    if (!selectedColumn && !selectedRow) return;
+
+    game.playRound(selectedColumn, selectedRow);
+    updateScreen();
+  }
+
+  boardContainerDiv.addEventListener("click", clickHandlerBoard);
+
+  updateScreen();
+
+  const showWinner = () => {
+    const winnerDiv = document.querySelector('.winner');
+    winnerDiv.textContent = `Congrats! The Winner is ${game.getActivePlayer().name}`;
+  };
+  
+  return { showWinner };
 })();
